@@ -32,7 +32,11 @@ add_custom_target(kernel_module ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy 
         ${CMAKE_CURRENT_SOURCE_DIR}/Makefile
-        ${CMAKE_CURRENT_SOURCE_DIR}/spi_simulator_driver.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/spi_simulator.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/spi_simulator.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/spi_core.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/spi_ioctl_handle.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/spi_sequence_match.c
         ${BUILD_DIR}/
     COMMAND make -C ${KERNEL_BUILD_DIR} M=${BUILD_DIR} modules
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
