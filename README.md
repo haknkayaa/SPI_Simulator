@@ -125,12 +125,15 @@ The web interface consists of three main sections:
 ## Screenshots
 
 ![Main Screen](docs/screenshots/main.png)
+
 *Main screen view*
 
 ![Sequence Management](docs/screenshots/sequence.png)
+
 *Sequence management panel*
 
-![Terminal](docs/screenshots/terminal.png)
+![Terminal](docs/screenshots/console.png)
+
 *Terminal and log viewing*
 
 ## Troubleshooting
@@ -167,6 +170,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-Hakan Kaya - [@yourusername](https://github.com/yourusername)
+Hakan Kaya - [@yourusername](https://github.com/haknkayaa)
 
-Project Link: [https://github.com/yourusername/spi-simulator](https://github.com/yourusername/spi-simulator) 
+Project Link: [https://github.com/haknkayaa/SPI_Simulator](https://github.com/haknkayaa/SPI_Simulator) 
