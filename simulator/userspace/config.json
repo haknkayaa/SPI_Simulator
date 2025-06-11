@@ -1,0 +1,8 @@
+{
+    "device_path": "/dev/spi_test",
+    "bus_num": 0,
+    "cs_num": 0,
+    "speed": 1000000,
+    "mode": 0,
+    "bits_per_word": 8
+}
