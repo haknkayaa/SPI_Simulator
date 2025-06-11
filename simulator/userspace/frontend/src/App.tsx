@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from './components/ui/button'
 import { Trash2, Download, Upload, Github, Terminal, Server, Monitor, Cpu } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
+import toast, { Toaster } from 'react-hot-toast'
 
 interface Command {
   id: number
@@ -116,8 +117,10 @@ function App() {
       
       setCommandList(prev => [...prev, newCommand])
       setCommand('')
+      toast.success('Command sent successfully')
     } catch (error) {
       console.error('Error sending command:', error)
+      toast.error('Failed to send command')
     }
   }
 
@@ -144,11 +147,14 @@ function App() {
         setSequence(prev => [...prev, newSeq])
         setNewReceived('')
         setNewResponse('')
+        toast.success('Sequence added successfully')
       } else {
         console.error('Failed to save sequences')
+        toast.error('Failed to save sequence')
       }
     } catch (error) {
       console.error('Error saving sequences:', error)
+      toast.error('Failed to save sequence')
     }
   }
 
@@ -167,11 +173,14 @@ function App() {
 
       if (response.ok) {
         setSequence(newSequences)
+        toast.success('Sequence removed successfully')
       } else {
         console.error('Failed to save sequences')
+        toast.error('Failed to remove sequence')
       }
     } catch (error) {
       console.error('Error saving sequences:', error)
+      toast.error('Failed to remove sequence')
     }
   }
 
@@ -201,8 +210,9 @@ function App() {
         
         if (data.status === 'success') {
           setIsRunning(true);
+          toast.success('Driver started successfully')
         } else {
-          alert('Failed to load driver: ' + data.message);
+          toast.error('Failed to start driver: ' + data.message)
         }
       } else {
         // Driver'ı kaldır
@@ -221,13 +231,14 @@ function App() {
         
         if (data.status === 'success') {
           setIsRunning(false);
+          toast.success('Driver stopped successfully')
         } else {
-          alert('Failed to unload driver: ' + data.message);
+          toast.error('Failed to stop driver: ' + data.message)
         }
       }
     } catch (error) {
       console.error('Error toggling driver:', error);
-      alert('Error toggling driver. Please make sure the backend is running.');
+      toast.error('Error toggling driver. Please make sure the backend is running.')
     }
   };
 
@@ -306,21 +317,76 @@ function App() {
       const data = await response.json();
       
       if (data.status === 'success') {
-        setSystemStatus(data.data);
+        const newStatus = data.data;
+        
+        // Check for status changes and show notifications
+        if (newStatus.backend.status !== systemStatus.backend.status) {
+          toast.dismiss('backend-status');
+          setTimeout(() => {
+            toast(newStatus.backend.status ? 'Backend server is running' : 'Backend server is not running', {
+              icon: newStatus.backend.status ? '✅' : '❌',
+              id: 'backend-status',
+              duration: 3000,
+            });
+          }, 100);
+        }
+        
+        if (newStatus.frontend.status !== systemStatus.frontend.status) {
+          toast.dismiss('frontend-status');
+          setTimeout(() => {
+            toast(newStatus.frontend.status ? 'Frontend server is running' : 'Frontend server is not running', {
+              icon: newStatus.frontend.status ? '✅' : '❌',
+              id: 'frontend-status',
+              duration: 3000,
+            });
+          }, 100);
+        }
+        
+        if (newStatus.driver.status !== systemStatus.driver.status) {
+          toast.dismiss('driver-status');
+          setTimeout(() => {
+            toast(newStatus.driver.status ? 'SPI driver is loaded' : 'SPI driver is not loaded', {
+              icon: newStatus.driver.status ? '✅' : '❌',
+              id: 'driver-status',
+              duration: 3000,
+            });
+          }, 100);
+        }
+        
+        setSystemStatus(newStatus);
       }
     } catch (error) {
       console.error('Error checking system status:', error);
+      // Show error notification
+      toast.error('Failed to check system status', {
+        id: 'status-error',
+        duration: 3000,
+      });
     }
   };
 
   // Periodically check system status
   useEffect(() => {
     const interval = setInterval(checkSystemStatus, 2000);
+    // Initial check
+    checkSystemStatus();
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Toaster 
+        position="bottom-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+        gutter={8}
+      />
+
       {/* Status Panel */}
       <div className="bg-card border-b border-border p-2">
         <div className="container mx-auto max-w-6xl">
