@@ -23,9 +23,13 @@ CORS(app, resources={
     }
 })
 
-# Log buffer'ı oluştur (son 100 log)
+# Global variables
+driver_name = None
 log_buffer = deque(maxlen=100)
 last_log_message = None  # Son log mesajını takip etmek için
+
+# Sequence dosyasının yolu
+SEQUENCE_FILE = '/tmp/spi_sequences.json'
 
 # Custom log handler
 class LogBufferHandler(logging.Handler):
@@ -72,13 +76,10 @@ def check_device_exists():
 def check_driver_loaded():
     try:
         result = subprocess.run(['lsmod'], capture_output=True, text=True)
-        return 'spi_test_driver' in result.stdout
+        return 'spi_simulator_driver' in result.stdout
     except Exception as e:
         log_info(f"Error checking driver status: {e}")
         return False
-
-# Sequence dosyasının yolu
-SEQUENCE_FILE = '/tmp/spi_sequences.json'
 
 def save_sequences(sequences):
     try:
@@ -108,9 +109,11 @@ def save_sequences(sequences):
         return False
 
 def load_driver(device_name="spidev0.0", sequences=None):
+    global driver_name
     try:
         log_info(f"[PROCESS] Starting driver load process for device: {device_name}")
-        
+        driver_name = device_name  # Set the global driver_name
+        log_info(f"[PROCESS] Using device name: {driver_name}")
         # Save sequences if provided
         if sequences:
             if not save_sequences(sequences):
@@ -183,12 +186,14 @@ def load_driver(device_name="spidev0.0", sequences=None):
         return False, error_msg
 
 def unload_driver():
+    global driver_name
     try:
         log_info("[PROCESS] Attempting to unload driver...")
         
         # Check if driver is loaded
         if not check_driver_loaded():
             log_info("[INFO] Driver is not loaded (this is normal)")
+            driver_name = None  # Reset driver_name when driver is not loaded
             return True
             
         # Try to unload the driver
@@ -198,6 +203,7 @@ def unload_driver():
                               
         if result.returncode == 0:
             log_info("[SUCCESS] Driver unloaded successfully")
+            driver_name = None  # Reset driver_name when driver is unloaded
             return True
         else:
             log_info(f"[ERROR] Error unloading driver: {result.stderr}")
@@ -331,12 +337,12 @@ def unload_driver_endpoint():
         if unload_driver():
             return jsonify({
                 'status': 'success',
-                'message': 'Driver unloaded successfully'
+                'message': 'Driver unloaded successfully' 
             })
         else:
             return jsonify({
                 'status': 'error',
-                'message': 'Failed to unload driver'
+                'message': 'Failed to unload driver' 
             }), 500
     except Exception as e:
         return jsonify({
@@ -353,6 +359,7 @@ def load_driver_endpoint():
         # Get device name and sequences from request
         data = request.json or {}
         device_name = data.get('device_name', 'spi_test')
+        driver_name = f'/dev/{device_name}'
         sequences = data.get('sequences', [])
         
         success, message = load_driver(device_name, sequences)
@@ -415,8 +422,8 @@ def get_system_status():
             'port': 5173
         },
         'driver': {
-            'status': os.path.exists('/dev/spi_test'),
-            'device': '/dev/spi_test'
+            'status': check_driver_loaded(),
+            'device': f"/dev/{driver_name}" if driver_name else None
         }
     }
 
@@ -427,39 +434,6 @@ def get_status():
         'status': 'success',
         'data': get_system_status()
     })
-
-# SPI ioctl commands
-SPI_IOC_MAGIC = ord('k')
-SPI_IOC_MESSAGE = 0x40006B00
-SPI_IOC_RD_MODE = 0x80016B01
-SPI_IOC_WR_MODE = 0x40016B01
-SPI_IOC_RD_BITS_PER_WORD = 0x80016B03
-SPI_IOC_WR_BITS_PER_WORD = 0x40016B03
-SPI_IOC_RD_MAX_SPEED_HZ = 0x80046B04
-SPI_IOC_WR_MAX_SPEED_HZ = 0x40046B04
-
-def spi_transfer(fd, tx_data):
-    rx_data = bytearray(len(tx_data))
-    tx_buf = struct.pack('@' + 'B' * len(tx_data), *tx_data)
-    rx_buf = struct.pack('@' + 'B' * len(rx_data), *rx_data)
-    
-    # Prepare SPI message
-    msg = struct.pack('@QQIIIIII',
-        len(tx_buf),  # tx_buf
-        len(rx_buf),  # rx_buf
-        0,            # tx_buf
-        0,            # rx_buf
-        0,            # speed_hz
-        0,            # delay_usecs
-        8,            # bits_per_word
-        0             # cs_change
-    )
-    
-    # Send ioctl command
-    fcntl.ioctl(fd, SPI_IOC_MESSAGE, msg)
-    
-    # Unpack received data
-    return list(struct.unpack('@' + 'B' * len(rx_data), rx_buf))
 
 @app.route('/api/spi/quick-command', methods=['POST'])
 def quick_spi_command():

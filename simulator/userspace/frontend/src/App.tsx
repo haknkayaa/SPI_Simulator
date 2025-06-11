@@ -61,12 +61,12 @@ function App() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     backend: { status: false, port: 5001 },
     frontend: { status: false, port: 5173 },
-    driver: { status: false, device: '/dev/spi_test' }
+    driver: { status: false, device: '/dev/spidev0.0' }
   });
   const [previousStatus, setPreviousStatus] = useState<SystemStatus>({
     backend: { status: false, port: 5001 },
     frontend: { status: false, port: 5173 },
-    driver: { status: false, device: '/dev/spi_test' }
+    driver: { status: false, device: '/dev/spidev0.0' }
   })
   const [quickResponse, setQuickResponse] = useState<string>('')
   const [showHowItWorks, setShowHowItWorks] = useState(false)
