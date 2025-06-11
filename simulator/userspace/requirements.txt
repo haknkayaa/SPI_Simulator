@@ -5,4 +5,5 @@ Flask-SocketIO==5.3.6
 python-socketio==5.8.0
 SQLAlchemy==2.0.21
 requests==2.31.0
-pyserial==3.5 
+pyserial==3.5
+psutil==5.9.5 

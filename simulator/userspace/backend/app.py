@@ -8,6 +8,8 @@ from datetime import datetime
 from collections import deque
 import time
 import json
+import socket
+import psutil
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -350,6 +352,38 @@ def update_sequences():
             'status': 'error',
             'message': f'Error updating sequences: {str(e)}'
         }), 500
+
+def check_port_status(port):
+    """Check if a port is in use."""
+    for conn in psutil.net_connections():
+        if conn.laddr.port == port and conn.status == 'LISTEN':
+            return True
+    return False
+
+def get_system_status():
+    """Get the status of all system components."""
+    return {
+        'backend': {
+            'status': check_port_status(5001),
+            'port': 5001
+        },
+        'frontend': {
+            'status': check_port_status(5173),
+            'port': 5173
+        },
+        'driver': {
+            'status': os.path.exists('/dev/spi_test'),
+            'device': '/dev/spi_test'
+        }
+    }
+
+@app.route('/api/system/status', methods=['GET'])
+def get_status():
+    """Get the status of all system components."""
+    return jsonify({
+        'status': 'success',
+        'data': get_system_status()
+    })
 
 if __name__ == '__main__':
     log_info("Starting SPI Simulator Backend...")

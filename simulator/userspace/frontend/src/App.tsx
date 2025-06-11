@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from './components/ui/button'
-import { Trash2, Download, Upload, Github, Terminal } from 'lucide-react'
+import { Trash2, Download, Upload, Github, Terminal, Server, Monitor, Cpu } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
 
 interface Command {
   id: number
@@ -19,6 +20,21 @@ interface Log {
   id: number
   message: string
   timestamp: string
+}
+
+interface SystemStatus {
+  backend: {
+    status: boolean;
+    port: number;
+  };
+  frontend: {
+    status: boolean;
+    port: number;
+  };
+  driver: {
+    status: boolean;
+    device: string;
+  };
 }
 
 function App() {
@@ -40,6 +56,11 @@ function App() {
   const [logList, setLogList] = useState<Log[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null);
+  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
+    backend: { status: false, port: 5001 },
+    frontend: { status: false, port: 5173 },
+    driver: { status: false, device: '/dev/spi_test' }
+  });
 
   const handleConfigChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({
@@ -256,7 +277,7 @@ function App() {
         
         setLogList(prev => {
           const existingIds = new Set(prev.map(log => log.message));
-          const uniqueNewLogs = newLogs.filter(log => !existingIds.has(log.message));
+          const uniqueNewLogs = newLogs.filter((log: Log) => !existingIds.has(log.message));
           return [...prev, ...uniqueNewLogs];
         });
       }
@@ -278,8 +299,79 @@ function App() {
     }
   }, [logList, commandList]); // logList veya commandList değiştiğinde scroll et
 
+  // Check system status
+  const checkSystemStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/system/status');
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setSystemStatus(data.data);
+      }
+    } catch (error) {
+      console.error('Error checking system status:', error);
+    }
+  };
+
+  // Periodically check system status
+  useEffect(() => {
+    const interval = setInterval(checkSystemStatus, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Status Panel */}
+      <div className="bg-card border-b border-border p-2">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex items-center justify-end gap-4">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Server className={`h-4 w-4 ${systemStatus.backend.status ? 'text-green-500' : 'text-red-500'}`} />
+                    <span className="text-xs text-muted-foreground">
+                      Backend ({systemStatus.backend.port})
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Backend Server {systemStatus.backend.status ? 'is running' : 'is not running'}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Monitor className={`h-4 w-4 ${systemStatus.frontend.status ? 'text-green-500' : 'text-red-500'}`} />
+                    <span className="text-xs text-muted-foreground">
+                      Frontend ({systemStatus.frontend.port})
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Frontend Server {systemStatus.frontend.status ? 'is running' : 'is not running'}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Cpu className={`h-4 w-4 ${systemStatus.driver.status ? 'text-green-500' : 'text-red-500'}`} />
+                    <span className="text-xs text-muted-foreground">
+                      Driver ({systemStatus.driver.device})
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>SPI Driver {systemStatus.driver.status ? 'is loaded' : 'is not loaded'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      </div>
+
       {/* Configuration Header */}
       <div className="bg-card border-b border-border p-4">
         <div className="container mx-auto max-w-6xl">
