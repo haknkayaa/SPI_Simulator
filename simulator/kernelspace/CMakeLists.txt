@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(spi_test_driver)
+project(spi_simulator_driver)
 
 # Get kernel version and build directory
 execute_process(
@@ -32,11 +32,11 @@ add_custom_target(kernel_module ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy 
         ${CMAKE_CURRENT_SOURCE_DIR}/Makefile
-        ${CMAKE_CURRENT_SOURCE_DIR}/spi_test_driver.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/spi_simulator_driver.c
         ${BUILD_DIR}/
     COMMAND make -C ${KERNEL_BUILD_DIR} M=${BUILD_DIR} modules
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${BUILD_DIR}/spi_test_driver.ko
+        ${BUILD_DIR}/spi_simulator_driver.ko
         ${OUTPUT_DIR}/
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DEPENDS kernel_cleanup

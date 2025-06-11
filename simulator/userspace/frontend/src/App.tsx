@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from './components/ui/button'
-import { Trash2, Download, Upload, Github, Terminal, Server, Monitor, Cpu } from 'lucide-react'
+import { Trash2, Download, Upload, Github, Terminal, Server, Monitor, Cpu, Copy } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -42,7 +42,7 @@ function App() {
   const [isRunning, setIsRunning] = useState(false)
   const [deviceExists, setDeviceExists] = useState(false)
   const [config, setConfig] = useState({
-    device_path: '/dev/spi_test',
+    device_path: '/dev/spidev0.0',
     bus_num: 0,
     cs_num: 0,
     speed: 1000000,
@@ -55,6 +55,7 @@ function App() {
   const [newReceived, setNewReceived] = useState('')
   const [newResponse, setNewResponse] = useState('')
   const [logList, setLogList] = useState<Log[]>([])
+  const [lastLogId, setLastLogId] = useState<number>(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null);
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
@@ -67,6 +68,7 @@ function App() {
     frontend: { status: false, port: 5173 },
     driver: { status: false, device: '/dev/spi_test' }
   })
+  const [quickResponse, setQuickResponse] = useState<string>('')
 
   const handleConfigChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({
@@ -104,15 +106,19 @@ function App() {
     if (!command.trim()) return
 
     try {
-      const response = await fetch('http://localhost:5001/api/spi/command', {
+      const response = await fetch('http://localhost:5001/api/spi/quick-command', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ command }),
+        body: JSON.stringify({ 
+          command,
+          device_path: config.device_path 
+        }),
       })
       const data = await response.json()
       
+      if (data.status === 'success') {
       const newCommand: Command = {
         id: Date.now(),
         command: command,
@@ -121,8 +127,12 @@ function App() {
       }
       
       setCommandList(prev => [...prev, newCommand])
+        setQuickResponse(data.response)
       setCommand('')
       toast.success('Command sent successfully')
+      } else {
+        toast.error(data.message || 'Failed to send command')
+      }
     } catch (error) {
       console.error('Error sending command:', error)
       toast.error('Failed to send command')
@@ -207,17 +217,20 @@ function App() {
           }),
         });
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
         const data = await response.json();
+        
+        if (!response.ok) {
+          // Backend'den gelen hata mesajını kullan
+          const errorMessage = data.message || `HTTP error! status: ${response.status}`;
+          throw new Error(errorMessage);
+        }
         
         if (data.status === 'success') {
           setIsRunning(true);
           toast.success('Driver started successfully')
         } else {
-          toast.error('Failed to start driver: ' + data.message)
+          // Backend'den gelen hata mesajını göster
+          toast.error(data.message || 'Failed to start driver')
         }
       } else {
         // Driver'ı kaldır
@@ -228,22 +241,32 @@ function App() {
           },
         });
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
         const data = await response.json();
+        
+        if (!response.ok) {
+          // Backend'den gelen hata mesajını kullan
+          const errorMessage = data.message || `HTTP error! status: ${response.status}`;
+          throw new Error(errorMessage);
+        }
         
         if (data.status === 'success') {
           setIsRunning(false);
           toast.success('Driver stopped successfully')
         } else {
-          toast.error('Failed to stop driver: ' + data.message)
+          // Backend'den gelen hata mesajını göster
+          toast.error(data.message || 'Failed to stop driver')
         }
       }
     } catch (error) {
       console.error('Error toggling driver:', error);
-      toast.error('Error toggling driver. Please make sure the backend is running.')
+      if (error instanceof Error) {
+        // Backend'den gelen hata mesajını göster
+        toast.error(error.message);
+      } else {
+        toast.error('Error toggling driver. Please make sure the backend is running.')
+      }
+      // Hata durumunda isRunning state'ini güncelleme
+      setIsRunning(false);
     }
   };
 
@@ -278,6 +301,36 @@ function App() {
     reader.readAsText(file)
   }
 
+  const handleExportConfig = () => {
+    const dataStr = JSON.stringify(config, null, 2)
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+    
+    const exportFileDefaultName = `spi_config_${new Date().toISOString().split('T')[0]}.json`
+    
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', dataUri)
+    linkElement.setAttribute('download', exportFileDefaultName)
+    linkElement.click()
+  }
+
+  const handleImportConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const importedConfig = JSON.parse(e.target?.result as string)
+        setConfig(importedConfig)
+        toast.success('Configuration imported successfully')
+      } catch (error) {
+        console.error('Error importing configuration:', error)
+        toast.error('Invalid configuration file format')
+      }
+    }
+    reader.readAsText(file)
+  }
+
   // Log'ları kontrol et
   const checkLogs = async () => {
     try {
@@ -291,14 +344,34 @@ function App() {
           timestamp: new Date().toLocaleTimeString()
         }));
         
-        setLogList(prev => {
-          const existingIds = new Set(prev.map(log => log.message));
-          const uniqueNewLogs = newLogs.filter((log: Log) => !existingIds.has(log.message));
-          return [...prev, ...uniqueNewLogs];
-        });
+        setLogList(newLogs);
       }
     } catch (error) {
       console.error('Error checking logs:', error);
+    }
+  };
+
+  // Terminal'i temizle
+  const clearTerminal = async () => {
+    try {
+      // Backend'deki logları temizle
+      const response = await fetch('http://localhost:5001/api/spi/clear-logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear logs');
+      }
+
+      // Frontend'deki logları temizle
+      setLogList([]);
+      setLastLogId(0);
+    } catch (error) {
+      console.error('Error clearing logs:', error);
+      toast.error('Failed to clear logs');
     }
   };
 
@@ -324,6 +397,10 @@ function App() {
       if (data.status === 'success') {
         const newStatus = data.data;
         setSystemStatus(newStatus);
+        // Driver durumunu kontrol et ve isRunning state'ini güncelle
+        if (!newStatus.driver.status && isRunning) {
+          setIsRunning(false);
+        }
       }
     } catch (error) {
       console.error('Error checking system status:', error);
@@ -338,15 +415,29 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Terminal içeriğini kopyala
+  const copyTerminalContent = () => {
+    const content = logList.map(log => log.message).join('\n');
+    navigator.clipboard.writeText(content);
+    toast.success('Terminal content copied to clipboard');
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Toaster 
         position="bottom-right"
         toastOptions={{
-          duration: 3000,
+          duration: 5000,
           style: {
             background: '#333',
             color: '#fff',
+            maxWidth: '500px',
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+            padding: '16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            lineHeight: '1.5'
           },
         }}
         gutter={8}
@@ -357,7 +448,7 @@ function App() {
       />
 
       {/* Status Panel */}
-      <div className="bg-black border-b border-border p-2">
+      <div className="bg-white border-b border-border p-2">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-end gap-4">
             <TooltipProvider>
@@ -365,7 +456,7 @@ function App() {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
                     <Server className={`h-4 w-4 ${systemStatus.backend.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-white">
+                    <span className="text-xs text-gray-700">
                       Backend ({systemStatus.backend.port})
                     </span>
                   </div>
@@ -379,7 +470,7 @@ function App() {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
                     <Monitor className={`h-4 w-4 ${systemStatus.frontend.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-white">
+                    <span className="text-xs text-gray-700">
                       Frontend ({systemStatus.frontend.port})
                     </span>
                   </div>
@@ -393,7 +484,7 @@ function App() {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
                     <Cpu className={`h-4 w-4 ${systemStatus.driver.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-white">
+                    <span className="text-xs text-gray-700">
                       Driver ({systemStatus.driver.device})
                     </span>
                   </div>
@@ -474,14 +565,6 @@ function App() {
             </div>
 
             <div className="flex items-end gap-2">
-              <Button 
-                onClick={handleSaveConfig}
-                variant="outline"
-                size="default"
-                className="text-foreground hover:text-foreground h-9"
-              >
-                Save Config
-              </Button>
               <Button 
                 onClick={toggleRunning}
                 variant={isRunning ? "destructive" : "default"}
@@ -567,12 +650,13 @@ function App() {
             </div>
           </div>
 
-          {/* Command Interface */}
+          {/* Quick Action Panel */}
           <div className="bg-card rounded-lg shadow-lg p-6 border border-border">
-            <h2 className="text-2xl font-semibold mb-4 text-foreground">Command Interface</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-foreground">Quick Actions</h2>
             <div className="space-y-4">
+              {/* Quick Send Command */}
               <div>
-                <label className="block text-sm font-medium mb-1 text-foreground">Command (Hex)</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">Quick Send Command</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -585,6 +669,68 @@ function App() {
                     Send
                   </Button>
                 </div>
+                {quickResponse && (
+                  <div className="mt-2 p-2 bg-background/50 rounded-md">
+                    <div className="text-xs text-muted-foreground mb-1">Response:</div>
+                    <div className="font-mono text-sm text-blue-400">{quickResponse}</div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportConfig}
+                    className="hidden"
+                    id="import-config"
+                  />
+                  <Button 
+                    variant="outline"
+                    size="default"
+                    className="w-full text-foreground hover:text-foreground"
+                    onClick={() => document.getElementById('import-config')?.click()}
+                  >
+                    Import Config
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleExportConfig}
+                  variant="outline"
+                  size="default"
+                  className="w-full text-foreground hover:text-foreground"
+                >
+                  Export Config
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportSequences}
+                    className="hidden"
+                    id="import-sequences"
+                  />
+                  <Button 
+                    variant="outline"
+                    size="default"
+                    className="w-full text-foreground hover:text-foreground"
+                    onClick={() => document.getElementById('import-sequences')?.click()}
+                  >
+                    Import Sequences
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleExportSequences}
+                  variant="outline"
+                  size="default"
+                  className="w-full text-foreground hover:text-foreground"
+                >
+                  Export Sequences
+                </Button>
               </div>
             </div>
           </div>
@@ -596,10 +742,27 @@ function App() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold text-foreground">Terminal</h2>
               <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyTerminalContent}
+                        className="text-foreground hover:text-foreground"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy terminal content</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setLogList([])}
+                  onClick={clearTerminal}
                   className="text-foreground hover:text-foreground"
                 >
                   Clear
@@ -608,18 +771,18 @@ function App() {
             </div>
             <div 
               ref={terminalRef}
-              className="bg-black/50 rounded-md p-4 font-mono text-sm h-[300px] overflow-y-auto"
+              className="bg-black/50 rounded-md p-4 font-mono text-xs h-[300px] overflow-y-auto"
             >
               {logList.map((log) => (
-                <div key={log.id} className="mb-0.5">
-                  <div className="text-yellow-400">{log.message}</div>
+                <div key={log.id}>
+                  <div className="text-green-400">{log.message}</div>
                 </div>
               ))}
               {commandList.map((cmd) => (
-                <div key={cmd.id} className="mb-0.5">
-                  <div className="text-gray-400 text-xs">{cmd.timestamp}</div>
+                <div key={cmd.id}>
+                  <div className="text-gray-400 text-[10px]">{cmd.timestamp}</div>
                   <div className="text-green-400">&gt; {cmd.command}</div>
-                  <div className="text-blue-400">&lt; {cmd.response}</div>
+                  <div className="text-green-400">&lt; {cmd.response}</div>
                 </div>
               ))}
             </div>

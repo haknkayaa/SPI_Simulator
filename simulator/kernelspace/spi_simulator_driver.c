@@ -271,10 +271,10 @@ static long spi_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
                 return -EFAULT;
             }
 
-            printk(KERN_INFO "SPI Simulator: Transfer details - tx_buf: %p, rx_buf: %p, len: %u, speed_hz: %u, "
+            printk(KERN_INFO "SPI Simulator: Transfer details - tx_buf: %llx, rx_buf: %llx, len: %u, speed_hz: %u, "
                              "delay_usecs: %u, bits_per_word: %u\n",
-                   transfer.tx_buf, transfer.rx_buf, transfer.len, transfer.speed_hz, transfer.delay_usecs,
-                   transfer.bits_per_word);
+                   (unsigned long long) transfer.tx_buf, (unsigned long long) transfer.rx_buf, transfer.len,
+                   transfer.speed_hz, transfer.delay_usecs, transfer.bits_per_word);
 
             // Check if this is a read or write operation based on tx_buf and rx_buf
             if (transfer.tx_buf && !transfer.rx_buf) {
@@ -492,8 +492,8 @@ static long spi_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
                     }
                     printk(KERN_CONT "\n");
 
-                    printk(KERN_INFO "SPI Simulator: About to copy %u bytes to user buffer at %p\n", transfer.len,
-                           transfer.rx_buf);
+                    printk(KERN_INFO "SPI Simulator: About to copy %u bytes to user buffer at %llx\n", transfer.len,
+                           (unsigned long long) transfer.rx_buf);
 
                     // Copy response to user buffer
                     if (copy_to_user((void __user *) transfer.rx_buf, rx_buf, transfer.len)) {
