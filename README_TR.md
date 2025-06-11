@@ -125,12 +125,15 @@ Web arayüzü üç ana bölümden oluşur:
 ## Ekran Görüntüleri
 
 ![Ana Ekran](docs/screenshots/main.png)
+
 *Ana ekran görünümü*
 
 ![Sequence Yönetimi](docs/screenshots/sequence.png)
+
 *Sequence yönetimi paneli*
 
-![Terminal](docs/screenshots/terminal.png)
+![Terminal](docs/screenshots/console.png)
+
 *Terminal ve log görüntüleme*
 
 ## Hata Ayıklama
