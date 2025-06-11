@@ -170,6 +170,6 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## İletişim
 
-Hakan Kaya - [@yourusername](https://github.com/yourusername)
+Hakan Kaya - [@haknkayaa](https://github.com/haknkayaa)
 
-Proje Linki: [https://github.com/yourusername/spi-simulator](https://github.com/yourusername/spi-simulator)
+Project Link: [https://github.com/haknkayaa/SPI_Simulator](https://github.com/haknkayaa/SPI_Simulator) 

@@ -170,6 +170,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-Hakan Kaya - [@yourusername](https://github.com/haknkayaa)
+Hakan Kaya - [@haknkayaa](https://github.com/haknkayaa)
 
 Project Link: [https://github.com/haknkayaa/SPI_Simulator](https://github.com/haknkayaa/SPI_Simulator) 
