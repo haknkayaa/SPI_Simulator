@@ -62,6 +62,11 @@ function App() {
     frontend: { status: false, port: 5173 },
     driver: { status: false, device: '/dev/spi_test' }
   });
+  const [previousStatus, setPreviousStatus] = useState<SystemStatus>({
+    backend: { status: false, port: 5001 },
+    frontend: { status: false, port: 5173 },
+    driver: { status: false, device: '/dev/spi_test' }
+  })
 
   const handleConfigChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({
@@ -318,50 +323,10 @@ function App() {
       
       if (data.status === 'success') {
         const newStatus = data.data;
-        
-        // Check for status changes and show notifications
-        if (newStatus.backend.status !== systemStatus.backend.status) {
-          toast.dismiss('backend-status');
-          setTimeout(() => {
-            toast(newStatus.backend.status ? 'Backend server is running' : 'Backend server is not running', {
-              icon: newStatus.backend.status ? '✅' : '❌',
-              id: 'backend-status',
-              duration: 3000,
-            });
-          }, 100);
-        }
-        
-        if (newStatus.frontend.status !== systemStatus.frontend.status) {
-          toast.dismiss('frontend-status');
-          setTimeout(() => {
-            toast(newStatus.frontend.status ? 'Frontend server is running' : 'Frontend server is not running', {
-              icon: newStatus.frontend.status ? '✅' : '❌',
-              id: 'frontend-status',
-              duration: 3000,
-            });
-          }, 100);
-        }
-        
-        if (newStatus.driver.status !== systemStatus.driver.status) {
-          toast.dismiss('driver-status');
-          setTimeout(() => {
-            toast(newStatus.driver.status ? 'SPI driver is loaded' : 'SPI driver is not loaded', {
-              icon: newStatus.driver.status ? '✅' : '❌',
-              id: 'driver-status',
-              duration: 3000,
-            });
-          }, 100);
-        }
-        
         setSystemStatus(newStatus);
       }
     } catch (error) {
       console.error('Error checking system status:', error);
-      // Show error notification
-      toast.error('Failed to check system status', {
-        id: 'status-error',
-        duration: 3000,
-      });
     }
   };
 
@@ -385,10 +350,14 @@ function App() {
           },
         }}
         gutter={8}
+        containerStyle={{
+          bottom: 20,
+          right: 20,
+        }}
       />
 
       {/* Status Panel */}
-      <div className="bg-card border-b border-border p-2">
+      <div className="bg-black border-b border-border p-2">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-end gap-4">
             <TooltipProvider>
@@ -396,7 +365,7 @@ function App() {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
                     <Server className={`h-4 w-4 ${systemStatus.backend.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-white">
                       Backend ({systemStatus.backend.port})
                     </span>
                   </div>
@@ -410,7 +379,7 @@ function App() {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
                     <Monitor className={`h-4 w-4 ${systemStatus.frontend.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-white">
                       Frontend ({systemStatus.frontend.port})
                     </span>
                   </div>
@@ -424,7 +393,7 @@ function App() {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
                     <Cpu className={`h-4 w-4 ${systemStatus.driver.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-white">
                       Driver ({systemStatus.driver.device})
                     </span>
                   </div>
@@ -439,12 +408,12 @@ function App() {
       </div>
 
       {/* Configuration Header */}
-      <div className="bg-card border-b border-border p-4">
+      <div className="bg-black border-b border-border p-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1">
-                <label className="block text-xs font-medium mb-1 text-foreground">Device Path</label>
+                <label className="block text-xs font-medium mb-1 text-white">Device Path</label>
                 <input
                   type="text"
                   value={config.device_path}
@@ -454,7 +423,7 @@ function App() {
               </div>
               
               <div className="w-24">
-                <label className="block text-xs font-medium mb-1 text-foreground">Bus</label>
+                <label className="block text-xs font-medium mb-1 text-white">Bus</label>
                 <input
                   type="number"
                   value={config.bus_num}
@@ -464,7 +433,7 @@ function App() {
               </div>
               
               <div className="w-24">
-                <label className="block text-xs font-medium mb-1 text-foreground">CS</label>
+                <label className="block text-xs font-medium mb-1 text-white">CS</label>
                 <input
                   type="number"
                   value={config.cs_num}
@@ -474,7 +443,7 @@ function App() {
               </div>
               
               <div className="w-32">
-                <label className="block text-xs font-medium mb-1 text-foreground">Speed (Hz)</label>
+                <label className="block text-xs font-medium mb-1 text-white">Speed (Hz)</label>
                 <input
                   type="number"
                   value={config.speed}
@@ -484,7 +453,7 @@ function App() {
               </div>
               
               <div className="w-24">
-                <label className="block text-xs font-medium mb-1 text-foreground">Mode</label>
+                <label className="block text-xs font-medium mb-1 text-white">Mode</label>
                 <input
                   type="number"
                   value={config.mode}
@@ -494,7 +463,7 @@ function App() {
               </div>
               
               <div className="w-24">
-                <label className="block text-xs font-medium mb-1 text-foreground">Bits</label>
+                <label className="block text-xs font-medium mb-1 text-white">Bits</label>
                 <input
                   type="number"
                   value={config.bits_per_word}
@@ -517,7 +486,7 @@ function App() {
                 onClick={toggleRunning}
                 variant={isRunning ? "destructive" : "default"}
                 size="default"
-                className="h-9"
+                className={`h-9 ${!isRunning ? 'bg-green-600 hover:bg-green-700' : ''}`}
               >
                 {isRunning ? 'Stop' : 'Start'}
               </Button>
