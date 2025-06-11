@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from './components/ui/button'
-import { Trash2, Download, Upload, Github, Terminal, Server, Monitor, Cpu, Copy } from 'lucide-react'
+import { Trash2, Download, Upload, Github, Terminal, Server, Monitor, Cpu, Copy, HelpCircle } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -69,6 +69,7 @@ function App() {
     driver: { status: false, device: '/dev/spi_test' }
   })
   const [quickResponse, setQuickResponse] = useState<string>('')
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
 
   const handleConfigChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({
@@ -450,57 +451,165 @@ function App() {
       {/* Status Panel */}
       <div className="bg-white border-b border-border p-2">
         <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-end gap-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2">
-                    <Server className={`h-4 w-4 ${systemStatus.backend.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-gray-700">
-                      Backend ({systemStatus.backend.port})
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Backend Server {systemStatus.backend.status ? 'is running' : 'is not running'}</p>
-                </TooltipContent>
-              </Tooltip>
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHowItWorks(true)}
+              className="text-gray-700 hover:text-gray-900"
+            >
+              <HelpCircle className="h-5 w-5 mr-2" />
+              How it Works?
+            </Button>
+            <div className="flex items-center gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <Server className={`h-4 w-4 ${systemStatus.backend.status ? 'text-green-500' : 'text-red-500'}`} />
+                      <span className="text-xs text-gray-700">
+                        Backend ({systemStatus.backend.port})
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Backend Server {systemStatus.backend.status ? 'is running' : 'is not running'}</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2">
-                    <Monitor className={`h-4 w-4 ${systemStatus.frontend.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-gray-700">
-                      Frontend ({systemStatus.frontend.port})
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Frontend Server {systemStatus.frontend.status ? 'is running' : 'is not running'}</p>
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <Monitor className={`h-4 w-4 ${systemStatus.frontend.status ? 'text-green-500' : 'text-red-500'}`} />
+                      <span className="text-xs text-gray-700">
+                        Frontend ({systemStatus.frontend.port})
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Frontend Server {systemStatus.frontend.status ? 'is running' : 'is not running'}</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2">
-                    <Cpu className={`h-4 w-4 ${systemStatus.driver.status ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className="text-xs text-gray-700">
-                      Driver ({systemStatus.driver.device})
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>SPI Driver {systemStatus.driver.status ? 'is loaded' : 'is not loaded'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <Cpu className={`h-4 w-4 ${systemStatus.driver.status ? 'text-green-500' : 'text-red-500'}`} />
+                      <span className="text-xs text-gray-700">
+                        Driver ({systemStatus.driver.device})
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>SPI Driver {systemStatus.driver.status ? 'is loaded' : 'is not loaded'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* How it Works Dialog */}
+      {showHowItWorks && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">How it Works?</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHowItWorks(false)}
+                className="text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 rounded-full w-8 h-8 flex items-center justify-center"
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="space-y-4 text-gray-600">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Virtual Kernel Driver</h3>
+                <p className="mb-2">This simulator uses a custom Linux kernel module to create a virtual SPI device:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>Creates a virtual SPI device (e.g., /dev/spidev0.0)</li>
+                  <li>Implements standard SPI protocol in kernel space</li>
+                  <li>Handles SPI transactions with configurable parameters</li>
+                  <li>Provides real-time response simulation</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">1. Configuration</h3>
+                <p>Set up your virtual SPI device parameters:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>Device Path: Virtual device path (e.g., /dev/spidev0.0)</li>
+                  <li>Bus Number: Virtual SPI bus number</li>
+                  <li>CS (Chip Select): Virtual chip select number</li>
+                  <li>Speed: SPI communication speed in Hz</li>
+                  <li>Mode: SPI mode (0-3) for clock polarity and phase</li>
+                  <li>Bits: Bits per word (typically 8)</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">2. Sequence Management</h3>
+                <p>Define expected command-response pairs for the virtual device:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>Add received data in hex format that the device should expect</li>
+                  <li>Add corresponding response in hex format that the device should send</li>
+                  <li>Manage multiple sequences for complex device behavior</li>
+                  <li>Import/export sequences for different device configurations</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">3. Quick Actions</h3>
+                <p>Test your virtual SPI device communication:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>Send quick commands in hex format to the virtual device</li>
+                  <li>View immediate responses from the device</li>
+                  <li>Monitor communication in real-time</li>
+                  <li>Test device behavior without physical hardware</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">4. Terminal</h3>
+                <p>Monitor all SPI communication with the virtual device:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>View real-time logs of all SPI transactions</li>
+                  <li>Track command history and responses</li>
+                  <li>Copy terminal content for debugging</li>
+                  <li>Clear logs when needed</li>
+                </ul>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <h3 className="font-semibold text-gray-900 mb-2">Technical Details</h3>
+                <p className="mb-2">The simulator works by:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>Loading a custom kernel module that creates a virtual SPI device</li>
+                  <li>Intercepting SPI transactions at the kernel level</li>
+                  <li>Matching received commands against defined sequences</li>
+                  <li>Generating appropriate responses based on the configuration</li>
+                  <li>Providing a user-space interface for configuration and monitoring</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Title */}
+      <div className="bg-black py-8">
+        <div className="container mx-auto max-w-6xl">
+          <h1 className="text-4xl md:text-5xl font-bold text-white text-center">
+            Virtual SPI Simulator
+          </h1>
+          <p className="text-gray-400 text-center mt-2">
+            A powerful tool for simulating and testing SPI communication
+          </p>
         </div>
       </div>
 
       {/* Configuration Header */}
       <div className="bg-black border-b border-border p-4">
         <div className="container mx-auto max-w-6xl">
+          <h1 className="text-2xl font-bold text-white mb-4">Virtual SPI Configuration</h1>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1">
@@ -803,7 +912,7 @@ function App() {
             
             <div className="flex items-center gap-4">
               <a
-                href="https://github.com/yourusername/spi-simulator"
+                href="https://github.com/haknkayaa/SPI_Simulator"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -811,9 +920,22 @@ function App() {
                 <Github className="h-5 w-5" />
               </a>
               <span className="text-sm text-muted-foreground">
-                © 2024 Linux SPI Simulator | developed by Hakan Kaya
+                © 2024
               </span>
             </div>
+          </div>
+          <div className="flex justify-center mt-2">
+            <span className="text-sm text-muted-foreground">
+              developed by{' '}
+              <a
+                href="https://hakankaya.kim/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                Hakan Kaya
+              </a>
+            </span>
           </div>
         </div>
       </footer>
