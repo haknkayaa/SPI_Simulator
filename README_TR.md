@@ -32,7 +32,7 @@ sudo apt-get install -y build-essential linux-headers-$(uname -r) python3-pip no
 2. Projeyi klonlayın:
 
 ```bash
-git clone https://github.com/yourusername/spi-simulator.git
+git clone https://github.com/haknkayaa/SPI_Simulator.git
 cd spi-simulator
 ```
 
